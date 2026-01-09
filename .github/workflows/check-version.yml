@@ -158,12 +158,40 @@ jobs:
             exit 0
           fi
 
-          # 解析更新信息
-          UPDATES=$(echo "$UPDATES_JSON" | jq -r '.[] | "**\(.platform)**\n旧版本: `\(.old_version)`\n新版本: `\(.new_version)`\n[官网下载](https://www.weights.com/replay?platform=\(.download_param))\n"')
-
           # 构建飞书消息卡片
           TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
 
+          # 生成每个平台的更新元素
+          PLATFORM_ELEMENTS=$(echo "$UPDATES_JSON" | jq -c '.[]' | while IFS= read -r update; do
+            platform=$(echo "$update" | jq -r '.platform')
+            old_version=$(echo "$update" | jq -r '.old_version')
+            new_version=$(echo "$update" | jq -r '.new_version')
+            download_param=$(echo "$update" | jq -r '.download_param')
+            download_url=$(echo "$update" | jq -r '.download_url // ""')
+
+            # 构建下载链接部分
+            if [ -n "$download_url" ]; then
+              download_links="[官网下载](https://www.weights.com/replay?platform=${download_param}) | [直接下载](${download_url})"
+            else
+              download_links="[官网下载](https://www.weights.com/replay?platform=${download_param})"
+            fi
+
+            # 输出平台卡片元素
+            cat << ELEMENT
+          {
+            "tag": "div",
+            "text": {
+              "tag": "lark_md",
+              "content": "**${platform}**\n🔄 ${old_version} → ${new_version}\n📥 ${download_links}"
+            }
+          },
+          {
+            "tag": "hr"
+          },
+ELEMENT
+          done | sed '$ d' | sed '$ d')  # 删除最后一个 hr 和逗号
+
+          # 构建完整消息
           cat > /tmp/feishu_message.json << EOF
           {
             "msg_type": "interactive",
@@ -186,16 +214,7 @@ jobs:
                 {
                   "tag": "hr"
                 },
-                {
-                  "tag": "div",
-                  "text": {
-                    "tag": "lark_md",
-                    "content": "$(echo "$UPDATES_JSON" | jq -r '[.[] | "**" + .platform + "**\n- 旧版本: `" + .old_version + "`\n- 新版本: `" + .new_version + "`\n- [官网下载](https://www.weights.com/replay?platform=" + .download_param + ")" + (if .download_url != "" then "\n- [直接下载](" + .download_url + ")" else "" end)] | join("\n\n")')"
-                  }
-                },
-                {
-                  "tag": "hr"
-                },
+                ${PLATFORM_ELEMENTS}
                 {
                   "tag": "note",
                   "elements": [
