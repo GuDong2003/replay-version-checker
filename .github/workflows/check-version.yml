@@ -176,76 +176,72 @@ jobs:
               download_links="[官网下载](https://www.weights.com/replay?platform=${download_param})"
             fi
 
-            # 输出平台卡片元素 (使用 printf 代替 heredoc)
-            printf '          {\n'
-            printf '            "tag": "div",\n'
-            printf '            "text": {\n'
-            printf '              "tag": "lark_md",\n'
-            printf '              "content": "**%s**\\n🔄 %s → %s\\n📥 %s"\n' "$platform" "$old_version" "$new_version" "$download_links"
-            printf '            }\n'
-            printf '          },\n'
-            printf '          {\n'
-            printf '            "tag": "hr"\n'
-            printf '          },\n'
-          done | sed '$ d' | sed '$ d')  # 删除最后一个 hr 和逗号
+            # 输出平台卡片元素 (使用 jq 构建 JSON)
+            jq -n --arg platform "$platform" \
+                  --arg old_ver "$old_version" \
+                  --arg new_ver "$new_version" \
+                  --arg links "$download_links" \
+                  '{
+                    tag: "div",
+                    text: {
+                      tag: "lark_md",
+                      content: ("**" + $platform + "**\n🔄 " + $old_ver + " → " + $new_ver + "\n📥 " + $links)
+                    }
+                  }'
+            echo '{"tag":"hr"}'
+          done | jq -s '.')  # 将所有元素合并为数组
 
-          # 构建完整消息
-          cat > /tmp/feishu_message.json <<'MESSAGE_EOF'
-          {
-            "msg_type": "interactive",
-            "card": {
-              "header": {
-                "title": {
-                  "tag": "plain_text",
-                  "content": "🎉 Replay 新版本更新通知"
+          # 构建完整消息 (使用 jq)
+          GITHUB_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          echo "$PLATFORM_ELEMENTS" | jq --arg ts "$TIMESTAMP" --arg url "$GITHUB_URL" '{
+            msg_type: "interactive",
+            card: {
+              header: {
+                title: {
+                  tag: "plain_text",
+                  content: "🎉 Replay 新版本更新通知"
                 },
-                "template": "blue"
+                template: "blue"
               },
-              "elements": [
+              elements: ([
                 {
-                  "tag": "div",
-                  "text": {
-                    "tag": "lark_md",
-                    "content": "检测到以下平台有新版本发布："
+                  tag: "div",
+                  text: {
+                    tag: "lark_md",
+                    content: "检测到以下平台有新版本发布："
                   }
                 },
                 {
-                  "tag": "hr"
-                },
-                PLATFORM_ELEMENTS_PLACEHOLDER
+                  tag: "hr"
+                }
+              ] + (.[0:length-1]) + [
                 {
-                  "tag": "note",
-                  "elements": [
+                  tag: "note",
+                  elements: [
                     {
-                      "tag": "plain_text",
-                      "content": "TIMESTAMP_PLACEHOLDER"
+                      tag: "plain_text",
+                      content: ("检测时间: " + $ts)
                     }
                   ]
                 },
                 {
-                  "tag": "action",
-                  "actions": [
+                  tag: "action",
+                  actions: [
                     {
-                      "tag": "button",
-                      "text": {
-                        "tag": "plain_text",
-                        "content": "查看详情"
+                      tag: "button",
+                      text: {
+                        tag: "plain_text",
+                        content: "查看详情"
                       },
-                      "type": "primary",
-                      "url": "GITHUB_URL_PLACEHOLDER"
+                      type: "primary",
+                      url: $url
                     }
                   ]
                 }
-              ]
+              ])
             }
-          }
-MESSAGE_EOF
-
-          # 替换占位符
-          sed -i.bak "s|PLATFORM_ELEMENTS_PLACEHOLDER|${PLATFORM_ELEMENTS}|g" /tmp/feishu_message.json
-          sed -i.bak "s|TIMESTAMP_PLACEHOLDER|${TIMESTAMP}|g" /tmp/feishu_message.json
-          sed -i.bak "s|GITHUB_URL_PLACEHOLDER|https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|g" /tmp/feishu_message.json
-          rm -f /tmp/feishu_message.json.bak
+          }' > /tmp/feishu_message.json
 
           # 发送到飞书
           HTTP_CODE=$(curl -s -o /tmp/feishu_response.txt -w "%{http_code}" \
