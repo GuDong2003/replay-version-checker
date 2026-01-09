@@ -51,13 +51,26 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
 
+          # 检查是否有文件变化
           if [[ -f all_platforms_versions.json ]]; then
             git add all_platforms_versions.json
+
+            # 检查是否有变化需要提交
             if git diff --staged --quiet; then
               echo "No changes to commit"
             else
+              # 先拉取最新代码避免冲突
+              git pull --rebase origin main || true
+
+              # 提交变化
               git commit -m "chore: update Replay version info [skip ci]"
-              git push
+
+              # 推送到远程
+              git push || {
+                echo "Push failed, trying to pull and push again..."
+                git pull --rebase origin main
+                git push
+              }
             fi
           fi
 

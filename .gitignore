@@ -40,7 +40,6 @@ venv/
 # Generated data files
 latest_version.json
 past_versions.json
-all_platforms_versions.json
 
 # Debug/temporary files
 debug_*.html
