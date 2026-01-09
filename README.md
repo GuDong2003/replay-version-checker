@@ -234,21 +234,6 @@ RETRY_DELAY = 2      # 重试间隔（秒）
 DEV_MODE = os.getenv('DEV_MODE', 'false').lower() == 'true'  # 开发模式
 ```
 
-### 添加新平台
-
-编辑 `PLATFORMS` 字典添加新平台（需要知道对应的更新服务器 URL）:
-
-```python
-PLATFORMS = {
-    'your-platform': {
-        'name': 'Your Platform Name',
-        'subdomain': 'platform-subdomain',
-        'yml_file': 'latest.yml',
-        'download_param': 'platform'
-    }
-}
-```
-
 ### 添加通知方式
 
 在 `.github/workflows/check-version.yml` 的最后一步，你可以添加:
