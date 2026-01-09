@@ -192,56 +192,56 @@ jobs:
           done | sed '$ d' | sed '$ d')  # 删除最后一个 hr 和逗号
 
           # 构建完整消息
-          cat > /tmp/feishu_message.json << EOF
-          {
-            "msg_type": "interactive",
-            "card": {
-              "header": {
-                "title": {
-                  "tag": "plain_text",
-                  "content": "🎉 Replay 新版本更新通知"
-                },
-                "template": "blue"
-              },
-              "elements": [
-                {
-                  "tag": "div",
-                  "text": {
-                    "tag": "lark_md",
-                    "content": "检测到以下平台有新版本发布："
-                  }
-                },
-                {
-                  "tag": "hr"
-                },
-                ${PLATFORM_ELEMENTS}
-                {
-                  "tag": "note",
-                  "elements": [
-                    {
-                      "tag": "plain_text",
-                      "content": "检测时间: ${TIMESTAMP}"
-                    }
-                  ]
-                },
-                {
-                  "tag": "action",
-                  "actions": [
-                    {
-                      "tag": "button",
-                      "text": {
-                        "tag": "plain_text",
-                        "content": "查看详情"
-                      },
-                      "type": "primary",
-                      "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-          EOF
+          cat > /tmp/feishu_message.json <<-EOF
+		{
+		  "msg_type": "interactive",
+		  "card": {
+		    "header": {
+		      "title": {
+		        "tag": "plain_text",
+		        "content": "🎉 Replay 新版本更新通知"
+		      },
+		      "template": "blue"
+		    },
+		    "elements": [
+		      {
+		        "tag": "div",
+		        "text": {
+		          "tag": "lark_md",
+		          "content": "检测到以下平台有新版本发布："
+		        }
+		      },
+		      {
+		        "tag": "hr"
+		      },
+		      ${PLATFORM_ELEMENTS}
+		      {
+		        "tag": "note",
+		        "elements": [
+		          {
+		            "tag": "plain_text",
+		            "content": "检测时间: ${TIMESTAMP}"
+		          }
+		        ]
+		      },
+		      {
+		        "tag": "action",
+		        "actions": [
+		          {
+		            "tag": "button",
+		            "text": {
+		              "tag": "plain_text",
+		              "content": "查看详情"
+		            },
+		            "type": "primary",
+		            "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+		          }
+		        ]
+		      }
+		    ]
+		  }
+		}
+		EOF
 
           # 发送到飞书
           HTTP_CODE=$(curl -s -o /tmp/feishu_response.txt -w "%{http_code}" \
