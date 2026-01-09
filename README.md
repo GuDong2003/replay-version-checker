@@ -90,7 +90,7 @@ DEV_MODE=true python3 check_all_platforms.py
 │   └── main()                  # 主流程控制
 ├── requirements.txt             # Python 依赖（requests, pyyaml）
 ├── README.md                    # 本文档
-├── ANALYSIS.md                 # 技术分析文档
+├── .gitignore                   # Git 忽略配置
 └── .github/workflows/          # GitHub Actions 配置
     └── check-version.yml       # 自动检查工作流
 ```
