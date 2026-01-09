@@ -47,6 +47,7 @@ jobs:
           python check_all_platforms.py
 
       - name: Commit version file if changed
+        id: commit_check
         continue-on-error: true
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -59,6 +60,7 @@ jobs:
             # 检查是否有变化需要提交
             if git diff --staged --quiet; then
               echo "No changes to commit"
+              echo "version_updated=false" >> $GITHUB_OUTPUT
               exit 0
             fi
 
@@ -66,6 +68,7 @@ jobs:
             echo "Pulling latest changes..."
             git fetch origin main || {
               echo "Fetch failed, skipping commit"
+              echo "version_updated=false" >> $GITHUB_OUTPUT
               exit 0
             }
 
@@ -73,26 +76,32 @@ jobs:
             if ! git rebase origin/main 2>/dev/null; then
               echo "Rebase conflict detected, another workflow likely updated the file. Aborting this commit."
               git rebase --abort 2>/dev/null || true
+              echo "version_updated=false" >> $GITHUB_OUTPUT
               exit 0
             fi
 
             # 提交变化
             git commit -m "chore: update Replay version info [skip ci]" || {
               echo "Commit failed, skipping"
+              echo "version_updated=false" >> $GITHUB_OUTPUT
               exit 0
             }
 
             # 推送到远程,如果失败就放弃(避免邮件通知)
             if ! git push origin main 2>/dev/null; then
               echo "Push failed (likely another workflow pushed first). This is expected, skipping."
+              echo "version_updated=false" >> $GITHUB_OUTPUT
               exit 0
             fi
 
             echo "Successfully pushed version update"
+            echo "version_updated=true" >> $GITHUB_OUTPUT
+          else
+            echo "version_updated=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Create Issue on new version
-        if: steps.version_check.outputs.has_updates == 'true'
+        if: steps.version_check.outputs.has_updates == 'true' && steps.commit_check.outputs.version_updated == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -148,7 +157,7 @@ jobs:
           UPDATES_JSON: ${{ steps.version_check.outputs.updates_json }}
 
       - name: Send Feishu notification
-        if: steps.version_check.outputs.has_updates == 'true'
+        if: steps.version_check.outputs.has_updates == 'true' && steps.commit_check.outputs.version_updated == 'true'
         env:
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
           UPDATES_JSON: ${{ steps.version_check.outputs.updates_json }}
