@@ -1,0 +1,116 @@
+name: Check Replay Version
+
+on:
+  # 定时运行: 每 4 小时运行一次
+  schedule:
+    - cron: '0 */4 * * *'
+
+  # 支持手动触发
+  workflow_dispatch:
+
+  # 每次推送到 main 分支时也运行(可选)
+  push:
+    branches:
+      - main
+    paths:
+      - 'check_version.py'
+      - '.github/workflows/check-version.yml'
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # 需要获取完整历史以便提交更改
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run version check
+        id: version_check
+        run: |
+          python check_version.py
+
+      - name: Commit version file if changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          if [[ -f latest_version.json ]]; then
+            git add latest_version.json
+            if git diff --staged --quiet; then
+              echo "No changes to commit"
+            else
+              git commit -m "chore: update Replay version info [skip ci]"
+              git push
+            fi
+          fi
+
+      - name: Create Issue on new version
+        if: steps.version_check.outputs.new_version_available == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const currentVersion = '${{ steps.version_check.outputs.current_version }}';
+            const previousVersion = '${{ steps.version_check.outputs.previous_version }}';
+
+            const title = `🚀 Replay 新版本发布: ${currentVersion}`;
+            const body = `
+            ## 🎉 检测到 Replay 新版本
+
+            - **旧版本**: ${previousVersion}
+            - **新版本**: ${currentVersion}
+            - **下载地址**: https://www.weights.com/replay
+
+            ---
+
+            检测时间: ${new Date().toISOString()}
+
+            此 Issue 由 GitHub Actions 自动创建。
+            `;
+
+            // 检查是否已存在相同版本的 Issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              labels: 'version-update',
+              per_page: 100
+            });
+
+            const existingIssue = issues.data.find(issue =>
+              issue.title.includes(currentVersion)
+            );
+
+            if (!existingIssue) {
+              // 创建新 Issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['version-update', 'automated']
+              });
+
+              console.log('✅ Issue created successfully');
+            } else {
+              console.log('ℹ️ Issue already exists for this version');
+            }
+
+      - name: Send notification (optional)
+        if: steps.version_check.outputs.new_version_available == 'true'
+        run: |
+          echo "🎉 New version detected: ${{ steps.version_check.outputs.current_version }}"
+          echo "📬 You can add additional notification logic here (email, Slack, etc.)"
