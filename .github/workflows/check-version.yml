@@ -1,9 +1,9 @@
 name: Check Replay Version
 
 on:
-  # 定时运行: 每天 UTC 10:00 (北京时间 18:00)
+  # 定时运行: 每4小时运行一次
   schedule:
-    - cron: '0 10 * * *'
+    - cron: '0 */4 * * *'
 
   # 支持手动触发
   workflow_dispatch:
@@ -123,9 +123,94 @@ ${update.download_url ? `- **直接下载**: ${update.download_url}` : ''}
         env:
           UPDATES_JSON: ${{ steps.version_check.outputs.updates_json }}
 
-      - name: Send notification summary
+      - name: Send Feishu notification
         if: steps.version_check.outputs.has_updates == 'true'
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          UPDATES_JSON: ${{ steps.version_check.outputs.updates_json }}
         run: |
-          echo "🎉 New versions detected:"
-          echo "${{ steps.version_check.outputs.updated_platforms }}"
-          echo "📬 You can add additional notification logic here (email, Slack, etc.)"
+          if [ -z "$FEISHU_WEBHOOK" ]; then
+            echo "⚠️  FEISHU_WEBHOOK_URL 未配置，跳过飞书通知"
+            exit 0
+          fi
+
+          # 解析更新信息
+          UPDATES=$(echo "$UPDATES_JSON" | jq -r '.[] | "**\(.platform)**\n旧版本: `\(.old_version)`\n新版本: `\(.new_version)`\n[官网下载](https://www.weights.com/replay?platform=\(.download_param))\n"')
+
+          # 构建飞书消息卡片
+          TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+
+          cat > /tmp/feishu_message.json << EOF
+          {
+            "msg_type": "interactive",
+            "card": {
+              "header": {
+                "title": {
+                  "tag": "plain_text",
+                  "content": "🎉 Replay 新版本更新通知"
+                },
+                "template": "blue"
+              },
+              "elements": [
+                {
+                  "tag": "div",
+                  "text": {
+                    "tag": "lark_md",
+                    "content": "检测到以下平台有新版本发布："
+                  }
+                },
+                {
+                  "tag": "hr"
+                },
+                {
+                  "tag": "div",
+                  "text": {
+                    "tag": "lark_md",
+                    "content": "$(echo "$UPDATES_JSON" | jq -r '[.[] | "**" + .platform + "**\n- 旧版本: `" + .old_version + "`\n- 新版本: `" + .new_version + "`\n- [官网下载](https://www.weights.com/replay?platform=" + .download_param + ")" + (if .download_url != "" then "\n- [直接下载](" + .download_url + ")" else "" end)] | join("\n\n")')"
+                  }
+                },
+                {
+                  "tag": "hr"
+                },
+                {
+                  "tag": "note",
+                  "elements": [
+                    {
+                      "tag": "plain_text",
+                      "content": "检测时间: ${TIMESTAMP}"
+                    }
+                  ]
+                },
+                {
+                  "tag": "action",
+                  "actions": [
+                    {
+                      "tag": "button",
+                      "text": {
+                        "tag": "plain_text",
+                        "content": "查看详情"
+                      },
+                      "type": "primary",
+                      "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+          EOF
+
+          # 发送到飞书
+          HTTP_CODE=$(curl -s -o /tmp/feishu_response.txt -w "%{http_code}" \
+            -X POST "$FEISHU_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d @/tmp/feishu_message.json)
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ 飞书通知发送成功"
+            cat /tmp/feishu_response.txt
+          else
+            echo "❌ 飞书通知发送失败 (HTTP $HTTP_CODE)"
+            cat /tmp/feishu_response.txt
+            exit 1
+          fi
