@@ -1,37 +1,37 @@
 {
-  "check_time": "2026-01-10T02:39:17.892620+08:00",
+  "check_time": "2026-01-10T02:41:08.535469+08:00",
   "platforms": {
     "mac-arm64": {
-      "version": "8.5.3",
+      "version": "8.6.0",
       "platform": "macOS Apple Silicon",
       "platform_key": "mac-arm64",
       "source_url": "https://updates-mac-arm64.weights.com/latest-mac.yml",
       "download_param": "mac",
       "release_date": "2026-01-05T11:38:40.614Z",
-      "download_path": "Replay-arm64-8.5.3.zip",
-      "full_download_url": "https://updates-mac-arm64.weights.com/Replay-arm64-8.5.3.zip",
+      "download_path": "Replay-arm64-8.6.0.zip",
+      "full_download_url": "https://updates-mac-arm64.weights.com/Replay-arm64-8.6.0.zip",
       "sha512": "pKL8oEy1GXBHaIOF..."
     },
     "mac-x64": {
-      "version": "8.5.3",
+      "version": "8.6.0",
       "platform": "macOS Intel",
       "platform_key": "mac-x64",
       "source_url": "https://updates-mac-x64.weights.com/latest-mac.yml",
       "download_param": "mac_x64",
       "release_date": "2026-01-05T11:38:32.176Z",
-      "download_path": "Replay-x64-8.5.3.zip",
-      "full_download_url": "https://updates-mac-x64.weights.com/Replay-x64-8.5.3.zip",
+      "download_path": "Replay-x64-8.6.0.zip",
+      "full_download_url": "https://updates-mac-x64.weights.com/Replay-x64-8.6.0.zip",
       "sha512": "1KmUUacQdmTzVace..."
     },
     "windows": {
-      "version": "8.5.3",
+      "version": "8.6.0",
       "platform": "Windows",
       "platform_key": "windows",
       "source_url": "https://updates-windows.weights.com/latest.yml",
       "download_param": "windows",
       "release_date": "2026-01-05T11:34:16.383Z",
-      "download_path": "Replay-8.5.3-installer.exe",
-      "full_download_url": "https://updates-windows.weights.com/Replay-8.5.3-installer.exe",
+      "download_path": "Replay-8.6.0-installer.exe",
+      "full_download_url": "https://updates-windows.weights.com/Replay-8.6.0-installer.exe",
       "sha512": "2r1A4ZcIQNLUJFcm..."
     }
   }
