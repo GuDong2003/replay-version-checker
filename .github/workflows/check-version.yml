@@ -53,24 +53,24 @@ jobs:
 
           # 检查是否有文件变化
           if [[ -f all_platforms_versions.json ]]; then
-            # 先拉取最新代码
-            git fetch origin main
-            git reset --hard origin/main
-
-            # 重新运行检查以获取最新版本
-            python check_all_platforms.py
-
-            # 再次检查是否有变化
             git add all_platforms_versions.json
 
+            # 检查是否有变化需要提交
             if git diff --staged --quiet; then
               echo "No changes to commit"
             else
+              # 先拉取最新代码避免冲突
+              git pull --rebase origin main || true
+
               # 提交变化
               git commit -m "chore: update Replay version info [skip ci]"
 
-              # 推送,如果失败就放弃(可能其他工作流已经推送了)
-              git push || echo "Push failed, but continuing workflow..."
+              # 推送到远程
+              git push || {
+                echo "Push failed, trying to pull and push again..."
+                git pull --rebase origin main
+                git push
+              }
             fi
           fi
 
@@ -133,10 +133,10 @@ jobs:
       - name: Send Feishu notification
         if: steps.version_check.outputs.has_updates == 'true'
         env:
-          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
           UPDATES_JSON: ${{ steps.version_check.outputs.updates_json }}
         run: |
-          if [ -z "$FEISHU_WEBHOOK" ]; then
+          if [ -z "$FEISHU_WEBHOOK_URL" ]; then
             echo "⚠️  FEISHU_WEBHOOK_URL 未配置，跳过飞书通知"
             exit 0
           fi
@@ -209,7 +209,7 @@ jobs:
 
           # 发送到飞书
           HTTP_CODE=$(curl -s -o /tmp/feishu_response.txt -w "%{http_code}" \
-            -X POST "$FEISHU_WEBHOOK" \
+            -X POST "$FEISHU_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d @/tmp/feishu_message.json)
 
