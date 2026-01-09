@@ -156,6 +156,101 @@ def compare_versions(v1, v2):
     except Exception:
         return 0
 
+def send_feishu_notification(updated_platforms):
+    """发送飞书通知"""
+    webhook_url = os.getenv('FEISHU_WEBHOOK_URL')
+
+    if not webhook_url:
+        print("⚠️  FEISHU_WEBHOOK_URL 环境变量未配置，跳过飞书通知")
+        return False
+
+    if not updated_platforms:
+        print("ℹ️  没有更新需要通知")
+        return False
+
+    try:
+        # 构建更新内容
+        updates_content = []
+        for info in updated_platforms:
+            content = f"**{info['platform']}**\n"
+            content += f"- 旧版本: `{info['old_version']}`\n"
+            content += f"- 新版本: `{info['new_version']}`\n"
+            content += f"- [官网下载](https://www.weights.com/replay?platform={info['download_param']})"
+            if info.get('download_url'):
+                content += f"\n- [直接下载]({info['download_url']})"
+            updates_content.append(content)
+
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # 构建飞书消息卡片
+        message = {
+            "msg_type": "interactive",
+            "card": {
+                "header": {
+                    "title": {
+                        "tag": "plain_text",
+                        "content": "🎉 Replay 新版本更新通知"
+                    },
+                    "template": "blue"
+                },
+                "elements": [
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": "检测到以下平台有新版本发布："
+                        }
+                    },
+                    {
+                        "tag": "hr"
+                    },
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": "\n\n".join(updates_content)
+                        }
+                    },
+                    {
+                        "tag": "hr"
+                    },
+                    {
+                        "tag": "note",
+                        "elements": [
+                            {
+                                "tag": "plain_text",
+                                "content": f"检测时间: {timestamp}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+        # 发送请求
+        response = requests.post(
+            webhook_url,
+            headers={'Content-Type': 'application/json'},
+            json=message,
+            timeout=10
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('code') == 0:
+                print("✅ 飞书通知发送成功")
+                return True
+            else:
+                print(f"❌ 飞书通知发送失败: {result}")
+                return False
+        else:
+            print(f"❌ 飞书通知发送失败 (HTTP {response.status_code}): {response.text}")
+            return False
+
+    except Exception as e:
+        print(f"❌ 发送飞书通知时出错: {e}")
+        return False
+
 def main():
     """主函数"""
     print("=" * 70)
@@ -270,6 +365,13 @@ def main():
                 for platform in new_platforms:
                     print(f"   • {platform}")
 
+            print()
+
+            # 发送飞书通知
+            print("=" * 70)
+            print("📢 发送飞书通知...")
+            print("=" * 70)
+            send_feishu_notification(updated_platforms)
             print()
 
             # GitHub Actions 输出
