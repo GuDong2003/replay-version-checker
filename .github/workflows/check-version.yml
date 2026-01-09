@@ -74,24 +74,20 @@ jobs:
               return;
             }
 
-            // 为每个更新的平台创建 Issue
             for (const update of updates) {
               const title = `🚀 ${update.platform} 新版本 ${update.new_version}`;
-              const body = `## 🎉 检测到 ${update.platform} 新版本
 
-- 旧版本: ${update.old_version}
-- 新版本: ${update.new_version}
-- 官网下载: https://www.weights.com/replay?platform=${update.download_param}
-${update.download_url ? `- 直接下载: ${update.download_url}` : ''}
+              let body = `## 🎉 检测到 ${update.platform} 新版本\n\n`;
+              body += `- 旧版本: ${update.old_version}\n`;
+              body += `- 新版本: ${update.new_version}\n`;
+              body += `- 官网下载: https://www.weights.com/replay?platform=${update.download_param}\n`;
+              if (update.download_url) {
+                body += `- 直接下载: ${update.download_url}\n`;
+              }
+              body += `\n---\n\n`;
+              body += `检测时间: ${new Date().toISOString()}\n\n`;
+              body += `此 Issue 由 GitHub Actions 自动创建。`;
 
----
-
-检测时间: ${new Date().toISOString()}
-
-此 Issue 由 GitHub Actions 自动创建。
-              `;
-
-              // 检查是否已存在相同版本的 Issue
               const issues = await github.rest.issues.listForRepo({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -105,7 +101,6 @@ ${update.download_url ? `- 直接下载: ${update.download_url}` : ''}
               );
 
               if (!existingIssue) {
-                // 创建新 Issue
                 await github.rest.issues.create({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
