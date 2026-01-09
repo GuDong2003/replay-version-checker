@@ -55,16 +55,10 @@ jobs:
 
           # 检查是否有文件变化
           if [[ -f all_platforms_versions.json ]]; then
-            git add all_platforms_versions.json
+            # 先保存当前生成的版本文件
+            cp all_platforms_versions.json /tmp/new_version.json
 
-            # 检查是否有变化需要提交
-            if git diff --staged --quiet; then
-              echo "No changes to commit"
-              echo "version_updated=false" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-
-            # 先拉取最新代码避免冲突
+            # 拉取最新代码
             echo "Pulling latest changes..."
             git fetch origin main || {
               echo "Fetch failed, skipping commit"
@@ -72,13 +66,19 @@ jobs:
               exit 0
             }
 
-            # 如果有冲突,放弃本次提交(因为可能其他工作流已经更新了)
-            if ! git rebase origin/main 2>/dev/null; then
-              echo "Rebase conflict detected, another workflow likely updated the file. Aborting this commit."
-              git rebase --abort 2>/dev/null || true
+            # 重置到远程最新版本
+            git reset --hard origin/main
+
+            # 检查新生成的版本文件与远程是否有差异
+            if diff -q all_platforms_versions.json /tmp/new_version.json > /dev/null 2>&1; then
+              echo "No changes detected (files are identical)"
               echo "version_updated=false" >> $GITHUB_OUTPUT
               exit 0
             fi
+
+            # 恢复新生成的版本文件
+            cp /tmp/new_version.json all_platforms_versions.json
+            git add all_platforms_versions.json
 
             # 提交变化
             git commit -m "chore: update Replay version info [skip ci]" || {
