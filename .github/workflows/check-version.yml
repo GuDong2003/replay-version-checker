@@ -76,14 +76,13 @@ jobs:
 
             // 为每个更新的平台创建 Issue
             for (const update of updates) {
-              const title = `🚀 ${update.platform} 新版本: ${update.new_version}`;
-              const body = `
-## 🎉 检测到 ${update.platform} 新版本
+              const title = `🚀 ${update.platform} 新版本 ${update.new_version}`;
+              const body = `## 🎉 检测到 ${update.platform} 新版本
 
-- **旧版本**: ${update.old_version}
-- **新版本**: ${update.new_version}
-- **官网下载**: https://www.weights.com/replay?platform=${update.download_param}
-${update.download_url ? `- **直接下载**: ${update.download_url}` : ''}
+- 旧版本: ${update.old_version}
+- 新版本: ${update.new_version}
+- 官网下载: https://www.weights.com/replay?platform=${update.download_param}
+${update.download_url ? `- 直接下载: ${update.download_url}` : ''}
 
 ---
 
