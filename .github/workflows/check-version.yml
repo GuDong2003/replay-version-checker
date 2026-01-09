@@ -177,18 +177,18 @@ jobs:
             fi
 
             # 输出平台卡片元素
-            cat << ELEMENT
-          {
-            "tag": "div",
-            "text": {
-              "tag": "lark_md",
-              "content": "**${platform}**\n🔄 ${old_version} → ${new_version}\n📥 ${download_links}"
-            }
-          },
-          {
-            "tag": "hr"
-          },
-ELEMENT
+            cat <<-'ELEMENT'
+		{
+		  "tag": "div",
+		  "text": {
+		    "tag": "lark_md",
+		    "content": "**${platform}**\n🔄 ${old_version} → ${new_version}\n📥 ${download_links}"
+		  }
+		},
+		{
+		  "tag": "hr"
+		},
+		ELEMENT
           done | sed '$ d' | sed '$ d')  # 删除最后一个 hr 和逗号
 
           # 构建完整消息
