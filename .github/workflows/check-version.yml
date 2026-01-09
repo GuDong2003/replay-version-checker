@@ -1,9 +1,9 @@
 name: Check Replay Version
 
 on:
-  # 定时运行: 每 4 小时运行一次
+  # 定时运行: 每天 UTC 10:00 (北京时间 18:00)
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '0 10 * * *'
 
   # 支持手动触发
   workflow_dispatch:
@@ -13,12 +13,15 @@ on:
     branches:
       - main
     paths:
-      - 'check_version.py'
+      - 'check_all_platforms.py'
       - '.github/workflows/check-version.yml'
 
 jobs:
   check-version:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
 
     steps:
       - name: Checkout repository
@@ -41,15 +44,15 @@ jobs:
       - name: Run version check
         id: version_check
         run: |
-          python check_version.py
+          python check_all_platforms.py
 
       - name: Commit version file if changed
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
 
-          if [[ -f latest_version.json ]]; then
-            git add latest_version.json
+          if [[ -f all_platforms_versions.json ]]; then
+            git add all_platforms_versions.json
             if git diff --staged --quiet; then
               echo "No changes to commit"
             else
@@ -59,58 +62,70 @@ jobs:
           fi
 
       - name: Create Issue on new version
-        if: steps.version_check.outputs.new_version_available == 'true'
+        if: steps.version_check.outputs.has_updates == 'true'
         uses: actions/github-script@v7
         with:
           script: |
-            const currentVersion = '${{ steps.version_check.outputs.current_version }}';
-            const previousVersion = '${{ steps.version_check.outputs.previous_version }}';
+            const updatesJson = process.env.UPDATES_JSON;
+            const updates = JSON.parse(updatesJson || '[]');
 
-            const title = `🚀 Replay 新版本发布: ${currentVersion}`;
-            const body = `
-            ## 🎉 检测到 Replay 新版本
-
-            - **旧版本**: ${previousVersion}
-            - **新版本**: ${currentVersion}
-            - **下载地址**: https://www.weights.com/replay
-
-            ---
-
-            检测时间: ${new Date().toISOString()}
-
-            此 Issue 由 GitHub Actions 自动创建。
-            `;
-
-            // 检查是否已存在相同版本的 Issue
-            const issues = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'all',
-              labels: 'version-update',
-              per_page: 100
-            });
-
-            const existingIssue = issues.data.find(issue =>
-              issue.title.includes(currentVersion)
-            );
-
-            if (!existingIssue) {
-              // 创建新 Issue
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: title,
-                body: body,
-                labels: ['version-update', 'automated']
-              });
-
-              console.log('✅ Issue created successfully');
-            } else {
-              console.log('ℹ️ Issue already exists for this version');
+            if (updates.length === 0) {
+              console.log('No updates to report');
+              return;
             }
 
-      - name: Send notification (optional)
-        if: steps.version_check.outputs.new_version_available == 'true'
+            // 为每个更新的平台创建 Issue
+            for (const update of updates) {
+              const title = `🚀 ${update.platform} 新版本: ${update.new_version}`;
+              const body = `
+## 🎉 检测到 ${update.platform} 新版本
+
+- **旧版本**: ${update.old_version}
+- **新版本**: ${update.new_version}
+- **官网下载**: https://www.weights.com/replay?platform=${update.download_param}
+${update.download_url ? `- **直接下载**: ${update.download_url}` : ''}
+
+---
+
+检测时间: ${new Date().toISOString()}
+
+此 Issue 由 GitHub Actions 自动创建。
+              `;
+
+              // 检查是否已存在相同版本的 Issue
+              const issues = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'all',
+                labels: 'version-update',
+                per_page: 100
+              });
+
+              const existingIssue = issues.data.find(issue =>
+                issue.title.includes(update.platform) && issue.title.includes(update.new_version)
+              );
+
+              if (!existingIssue) {
+                // 创建新 Issue
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: title,
+                  body: body,
+                  labels: ['version-update', 'automated', update.platform_key]
+                });
+
+                console.log(`✅ Issue created for ${update.platform}: ${update.new_version}`);
+              } else {
+                console.log(`ℹ️ Issue already exists for ${update.platform} ${update.new_version}`);
+              }
+            }
+        env:
+          UPDATES_JSON: ${{ steps.version_check.outputs.updates_json }}
+
+      - name: Send notification summary
+        if: steps.version_check.outputs.has_updates == 'true'
         run: |
-          echo "🎉 New version detected: ${{ steps.version_check.outputs.current_version }}"
+          echo "🎉 New versions detected:"
+          echo "${{ steps.version_check.outputs.updated_platforms }}"
           echo "📬 You can add additional notification logic here (email, Slack, etc.)"
