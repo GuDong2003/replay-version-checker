@@ -4,12 +4,14 @@
 
 ## ✨ 功能特性
 
-- ✅ 直接访问官方更新服务器(与 Replay 应用完全相同)
-- ✅ 同时检查多个平台(macOS ARM/Intel、Windows)
+- ✅ 直接访问官方更新服务器（与 Replay 应用完全相同的 API）
+- ✅ 同时检查多个平台（macOS ARM/Intel、Windows）
+- ✅ 智能版本比较算法（支持各种版本号格式）
 - ✅ 版本变化时自动创建 GitHub Issue 通知
 - ✅ 支持 GitHub Actions 定时运行
-- ✅ 智能网络错误处理和自动重试
-- ✅ 多源备份自动切换
+- ✅ 智能网络错误处理和自动重试（3 次重试，2 秒间隔）
+- ✅ 开发模式支持（通过 `DEV_MODE` 环境变量）
+- ✅ 完整版本信息（版本号、发布日期、SHA512、直接下载链接）
 
 ## 🚀 快速开始
 
@@ -31,21 +33,42 @@ python3 check_all_platforms.py
 
 通过逆向分析 Replay v8.6.0 的 app.asar 文件，完全复现了官方的更新检查机制。
 
-**特点**:
-- 直接访问官方更新服务器
-- 同时检查所有平台版本
-- 自动检测版本变化
-- 平台自适应识别
-- 获取完整版本信息(版本号、发布日期、SHA512、下载链接)
-- 支持 GitHub Actions 集成
+**核心特性**:
+- 🔗 直接访问官方更新服务器（与 Replay 应用完全相同的 API）
+- 🌍 同时检查所有平台版本（并行请求）
+- 🔄 智能版本变化检测和比对
+- 📊 获取完整版本信息（版本号、发布日期、SHA512、下载链接）
+- 🔁 自动重试机制（网络错误自动重试 3 次）
+- 🤖 GitHub Actions 集成（自动创建 Issue 通知）
+- 🧪 开发模式支持（通过 `DEV_MODE` 环境变量）
 
 **支持的平台**:
-- ✅ macOS Apple Silicon (ARM64)
-- ✅ macOS Intel (x64)
-- ✅ Windows
-- ⚠️ Linux (由于使用 Cloudflare R2 签名 URL，目前无法自动检查)
+- ✅ macOS Apple Silicon (ARM64) - `https://updates-mac-arm64.weights.com`
+- ✅ macOS Intel (x64) - `https://updates-mac-x64.weights.com`
+- ✅ Windows - `https://updates-windows.weights.com`
+- ⚠️ Linux - 由于使用 Cloudflare R2 签名 URL，需要 AWS 签名认证，目前无法自动检查
 
 ## 📖 使用说明
+
+### 本地运行
+
+```bash
+# 1. 安装依赖
+pip install -r requirements.txt
+
+# 2. 正常模式运行（实际检查版本）
+python3 check_all_platforms.py
+
+# 3. 开发模式运行（跳过版本检查，用于测试）
+DEV_MODE=true python3 check_all_platforms.py
+```
+
+**工作流程**:
+1. 从各平台的更新服务器获取最新的 YAML 配置文件
+2. 解析版本信息（版本号、发布日期、下载链接、SHA512 校验值）
+3. 与历史版本比较，检测更新
+4. 将结果保存到 `all_platforms_versions.json`
+5. 在 GitHub Actions 中运行时，如有更新会自动创建 Issue
 
 ### GitHub Actions 自动运行
 
@@ -54,34 +77,27 @@ python3 check_all_platforms.py
 - **定时检查**: 每天 UTC 10:00 (北京时间 18:00)
 - **手动触发**: Actions 页面点击 "Run workflow"
 - **版本通知**: 发现新版本自动创建 Issue
-
-### 本地开发
-
-```bash
-# 克隆仓库
-git clone <your-repo-url>
-cd replay-version-checker
-
-# 安装依赖
-pip install -r requirements.txt
-
-# 运行检查
-python3 check_all_platforms.py
-```
+- **自动提交**: 版本文件更新后自动提交到仓库
 
 ## 📁 项目结构
 
 ```
-├── check_all_platforms.py       # ⭐ 主检查脚本
-├── requirements.txt             # Python 依赖
+├── check_all_platforms.py       # ⭐ 主检查脚本（约 316 行）
+│   ├── PLATFORMS               # 平台配置（macOS ARM/Intel, Windows）
+│   ├── fetch_platform_version()  # 获取单个平台版本
+│   ├── compare_versions()      # 智能版本比较算法
+│   ├── is_network_error()      # 网络错误识别
+│   └── main()                  # 主流程控制
+├── requirements.txt             # Python 依赖（requests, pyyaml）
 ├── README.md                    # 本文档
 ├── ANALYSIS.md                 # 技术分析文档
 └── .github/workflows/          # GitHub Actions 配置
+    └── check-version.yml       # 自动检查工作流
 ```
 
 ### 自动生成的文件
 
-- `all_platforms_versions.json` - 所有平台版本信息
+- `all_platforms_versions.json` - 所有平台版本信息（含完整历史记录）
 
 ## GitHub Actions 配置
 
@@ -176,11 +192,19 @@ schedule:
 
 ### 网络连接失败
 
-如果遇到网络问题:
+脚本内置智能重试机制，如果遇到网络问题:
 
-1. **检查网络连接**: 确保能访问 `weights.com` 和 Cloudflare R2
-2. **代理设置**: 如果使用代理,确保正确配置
-3. **防火墙**: 检查防火墙是否阻止了连接
+1. **自动重试**: 网络错误会自动重试 3 次，每次间隔 2 秒
+2. **错误识别**: 自动识别 connection、timeout、network 等网络错误
+3. **检查网络**: 确保能访问 `weights.com` 域名
+4. **代理设置**: 如使用代理，确保正确配置环境变量
+5. **防火墙**: 检查防火墙是否阻止了 HTTPS 连接
+
+**常见网络错误类型**:
+- Connection errors (连接失败)
+- Timeout errors (请求超时)
+- Network unreachable (网络不可达)
+- Connection refused/reset (连接被拒绝/重置)
 
 ### GitHub Actions 权限问题
 
@@ -188,17 +212,55 @@ schedule:
 
 1. 检查仓库的 Actions 权限设置
 2. 确保 Workflow 有 `contents: write` 和 `issues: write` 权限
+3. 验证 `GITHUB_TOKEN` 有足够的权限
+
+### 版本检测问题
+
+如果版本比较不准确:
+
+- 脚本使用智能版本比较算法，支持 `8.6.0`、`8.6.0-beta` 等格式
+- 自动标准化版本号并补齐长度
+- 支持检测版本升级、降级和不变三种状态
 
 ## 自定义扩展
 
+### 修改重试配置
+
+在 [check_all_platforms.py](check_all_platforms.py) 中修改重试参数:
+
+```python
+MAX_RETRIES = 3      # 最大重试次数
+RETRY_DELAY = 2      # 重试间隔（秒）
+DEV_MODE = os.getenv('DEV_MODE', 'false').lower() == 'true'  # 开发模式
+```
+
+### 添加新平台
+
+编辑 `PLATFORMS` 字典添加新平台（需要知道对应的更新服务器 URL）:
+
+```python
+PLATFORMS = {
+    'your-platform': {
+        'name': 'Your Platform Name',
+        'subdomain': 'platform-subdomain',
+        'yml_file': 'latest.yml',
+        'download_param': 'platform'
+    }
+}
+```
+
 ### 添加通知方式
 
-在 `.github/workflows/check-version.yml` 的最后一步,你可以添加:
+在 `.github/workflows/check-version.yml` 的最后一步，你可以添加:
 
 - 邮件通知
 - Slack/Discord 消息
 - 微信/钉钉机器人
 - Telegram Bot
+
+### 自定义版本比较逻辑
+
+修改 [check_all_platforms.py](check_all_platforms.py) 中的 `compare_versions()` 函数来自定义版本比较逻辑。
 
 ## 许可证
 
