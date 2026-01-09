@@ -53,24 +53,24 @@ jobs:
 
           # 检查是否有文件变化
           if [[ -f all_platforms_versions.json ]]; then
+            # 先拉取最新代码
+            git fetch origin main
+            git reset --hard origin/main
+
+            # 重新运行检查以获取最新版本
+            python check_all_platforms.py
+
+            # 再次检查是否有变化
             git add all_platforms_versions.json
 
-            # 检查是否有变化需要提交
             if git diff --staged --quiet; then
               echo "No changes to commit"
             else
-              # 先拉取最新代码避免冲突
-              git pull --rebase origin main || true
-
               # 提交变化
               git commit -m "chore: update Replay version info [skip ci]"
 
-              # 推送到远程
-              git push || {
-                echo "Push failed, trying to pull and push again..."
-                git pull --rebase origin main
-                git push
-              }
+              # 推送,如果失败就放弃(可能其他工作流已经推送了)
+              git push || echo "Push failed, but continuing workflow..."
             fi
           fi
 
