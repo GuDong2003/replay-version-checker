@@ -2,73 +2,86 @@
 
 🔍 自动检查 [Replay](https://www.weights.com/replay) 应用的版本更新工具
 
-## 功能特性
+## ✨ 功能特性
 
-- ✅ 自动从官网检查 Replay 的最新版本
+- ✅ 直接访问官方更新服务器(与 Replay 应用完全相同)
+- ✅ 同时检查多个平台(macOS ARM/Intel、Windows)
 - ✅ 版本变化时自动创建 GitHub Issue 通知
 - ✅ 支持 GitHub Actions 定时运行
-- ✅ 版本历史记录和比较
-- ✅ 可手动触发检查
+- ✅ 智能网络错误处理和自动重试
+- ✅ 多源备份自动切换
 
-## 使用方法
+## 🚀 快速开始
 
-### 1. GitHub Actions 自动运行
-
-本项目已配置 GitHub Actions,会自动执行以下操作:
-
-- **定时检查**: 每天 UTC 10:00 (北京时间 18:00) 自动运行
-- **手动触发**: 在 GitHub Actions 页面手动运行
-- **新版本通知**: 发现新版本时自动创建 Issue
-
-### 2. 本地运行
-
-#### 安装依赖
+### 安装依赖
 
 ```bash
 pip install -r requirements.txt
 ```
 
-#### 运行检查
+### 运行脚本
 
 ```bash
-python check_version.py
+python3 check_all_platforms.py
 ```
 
-#### 输出示例
+## 📦 核心功能
+
+### check_all_platforms.py
+
+通过逆向分析 Replay v8.6.0 的 app.asar 文件，完全复现了官方的更新检查机制。
+
+**特点**:
+- 直接访问官方更新服务器
+- 同时检查所有平台版本
+- 自动检测版本变化
+- 平台自适应识别
+- 获取完整版本信息(版本号、发布日期、SHA512、下载链接)
+- 支持 GitHub Actions 集成
+
+**支持的平台**:
+- ✅ macOS Apple Silicon (ARM64)
+- ✅ macOS Intel (x64)
+- ✅ Windows
+- ⚠️ Linux (由于使用 Cloudflare R2 签名 URL，目前无法自动检查)
+
+## 📖 使用说明
+
+### GitHub Actions 自动运行
+
+项目已配置自动化工作流:
+
+- **定时检查**: 每天 UTC 10:00 (北京时间 18:00)
+- **手动触发**: Actions 页面点击 "Run workflow"
+- **版本通知**: 发现新版本自动创建 Issue
+
+### 本地开发
+
+```bash
+# 克隆仓库
+git clone <your-repo-url>
+cd replay-version-checker
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 运行检查
+python3 check_all_platforms.py
+```
+
+## 📁 项目结构
 
 ```
-==================================================
-🔍 Replay 版本检查工具
-==================================================
-⏰ 检查时间: 2024-01-09 18:00:00
-🌐 检查网址: https://www.weights.com/replay
-
-📥 正在获取页面内容...
-✅ 页面内容获取成功 (大小: 45678 字节)
-🔍 正在提取版本号...
-✅ 当前版本: 1.2.3
-📦 历史版本: 1.2.2
-🕐 上次检查: 2024-01-08T18:00:00
-
-🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉
-🚀 发现新版本!
-   旧版本: 1.2.2
-   新版本: 1.2.3
-   下载地址: https://www.weights.com/replay
-🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉
-
-✅ 版本信息已保存到 latest_version.json
-==================================================
-✅ 检查完成
-==================================================
+├── check_all_platforms.py       # ⭐ 主检查脚本
+├── requirements.txt             # Python 依赖
+├── README.md                    # 本文档
+├── ANALYSIS.md                 # 技术分析文档
+└── .github/workflows/          # GitHub Actions 配置
 ```
 
-## 文件说明
+### 自动生成的文件
 
-- **check_version.py**: 主程序,负责检查版本更新
-- **requirements.txt**: Python 依赖包列表
-- **latest_version.json**: 存储最新版本信息(自动生成)
-- **.github/workflows/check-version.yml**: GitHub Actions 工作流配置
+- `all_platforms_versions.json` - 所有平台版本信息
 
 ## GitHub Actions 配置
 
@@ -80,7 +93,7 @@ python check_version.py
 
 ### 修改检查频率
 
-编辑 [.github/workflows/check-version.yml](.github/workflows/check-version.yml) 文件中的 cron 表达式:
+编辑 `.github/workflows/check-version.yml` 文件中的 cron 表达式:
 
 ```yaml
 schedule:
@@ -101,34 +114,73 @@ schedule:
    - ✅ Read and write permissions
    - ✅ Allow GitHub Actions to create and approve pull requests
 
-## 版本信息文件
+## 📊 版本信息文件示例
 
-`latest_version.json` 示例:
+### all_platforms_versions.json
+
+脚本运行后会生成包含所有平台版本信息的 JSON 文件：
 
 ```json
 {
-  "version": "1.2.3",
-  "last_check": "2024-01-09T18:00:00.000000",
-  "url": "https://www.weights.com/replay"
+  "check_time": "2026-01-10T00:42:40.824690",
+  "platforms": {
+    "mac-arm64": {
+      "version": "8.6.0",
+      "platform": "macOS Apple Silicon",
+      "platform_key": "mac-arm64",
+      "source_url": "https://updates-mac-arm64.weights.com/latest-mac.yml",
+      "download_param": "mac",
+      "release_date": "2026-01-05T11:38:40.614Z",
+      "download_path": "Replay-arm64-8.6.0.zip",
+      "full_download_url": "https://updates-mac-arm64.weights.com/Replay-arm64-8.6.0.zip",
+      "sha512": "pKL8oEy1GXBHaIOF..."
+    },
+    "mac-x64": {
+      "version": "8.6.0",
+      "platform": "macOS Intel",
+      "platform_key": "mac-x64",
+      "source_url": "https://updates-mac-x64.weights.com/latest-mac.yml",
+      "download_param": "mac_x64",
+      "release_date": "2026-01-05T11:38:32.176Z",
+      "download_path": "Replay-x64-8.6.0.zip",
+      "full_download_url": "https://updates-mac-x64.weights.com/Replay-x64-8.6.0.zip",
+      "sha512": "1KmUUacQdmTzVace..."
+    },
+    "windows": {
+      "version": "8.6.0",
+      "platform": "Windows",
+      "platform_key": "windows",
+      "source_url": "https://updates-windows.weights.com/latest.yml",
+      "download_param": "windows",
+      "release_date": "2026-01-05T11:34:16.383Z",
+      "download_path": "Replay-8.6.0-installer.exe",
+      "full_download_url": "https://updates-windows.weights.com/Replay-8.6.0-installer.exe",
+      "sha512": "2r1A4ZcIQNLUJFcm..."
+    }
+  }
 }
 ```
+
+> **注意**:
+> - Linux 平台使用 Cloudflare R2 签名 URL，需要 AWS 签名认证，目前无法通过简单的 YAML 文件自动检查
+> - 如果某个平台检查失败，它将不会出现在输出文件中
 
 ## 技术栈
 
 - **Python 3.11+**
 - **requests**: HTTP 请求库
-- **beautifulsoup4**: HTML 解析库
+- **pyyaml**: YAML 文件解析
 - **GitHub Actions**: 自动化运行
 
 ## 故障排查
 
-### 无法提取版本号
+### 网络连接失败
 
-如果程序无法提取版本号,可能是网站结构发生了变化。你可以:
+如果遇到网络问题:
 
-1. 查看程序输出的页面内容大小
-2. 手动访问 https://www.weights.com/replay 确认版本信息位置
-3. 修改 [check_version.py](check_version.py) 中的 `extract_version()` 函数,添加新的匹配模式
+1. **检查网络连接**: 确保能访问 `weights.com` 和 Cloudflare R2
+2. **代理设置**: 如果使用代理,确保正确配置
+3. **防火墙**: 检查防火墙是否阻止了连接
 
 ### GitHub Actions 权限问题
 
@@ -141,16 +193,12 @@ schedule:
 
 ### 添加通知方式
 
-在 [.github/workflows/check-version.yml](.github/workflows/check-version.yml) 的最后一步,你可以添加:
+在 `.github/workflows/check-version.yml` 的最后一步,你可以添加:
 
 - 邮件通知
 - Slack/Discord 消息
 - 微信/钉钉机器人
 - Telegram Bot
-
-### 修改版本提取逻辑
-
-编辑 [check_version.py](check_version.py) 中的 `extract_version()` 函数,添加特定的版本匹配规则。
 
 ## 许可证
 

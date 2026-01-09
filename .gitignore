@@ -37,5 +37,16 @@ Thumbs.db
 # Virtual environment
 venv/
 
-# Local version file (will be committed by Actions)
-# latest_version.json
+# Generated data files
+latest_version.json
+past_versions.json
+all_platforms_versions.json
+
+# Debug/temporary files
+debug_*.html
+page_source.html
+page_screenshot.png
+past_versions_modal.html
+
+# Extracted app files
+app_extracted/
