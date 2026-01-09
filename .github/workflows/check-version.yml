@@ -168,7 +168,7 @@ jobs:
           fi
 
           # 构建飞书消息卡片
-          TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+          TIMESTAMP=$(TZ='Asia/Shanghai' date "+%Y-%m-%d %H:%M:%S")
 
           # 生成每个平台的更新元素
           PLATFORM_ELEMENTS=$(echo "$UPDATES_JSON" | jq -c '.[]' | while IFS= read -r update; do
