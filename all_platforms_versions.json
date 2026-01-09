@@ -2,7 +2,7 @@
   "check_time": "2026-01-09T17:52:29.574049",
   "platforms": {
     "mac-arm64": {
-      "version": "8.5.2",
+      "version": "8.5.3",
       "platform": "macOS Apple Silicon",
       "platform_key": "mac-arm64",
       "source_url": "https://updates-mac-arm64.weights.com/latest-mac.yml",
@@ -13,7 +13,7 @@
       "sha512": "pKL8oEy1GXBHaIOF..."
     },
     "mac-x64": {
-      "version": "8.5.2",
+      "version": "8.5.3",
       "platform": "macOS Intel",
       "platform_key": "mac-x64",
       "source_url": "https://updates-mac-x64.weights.com/latest-mac.yml",
@@ -24,7 +24,7 @@
       "sha512": "1KmUUacQdmTzVace..."
     },
     "windows": {
-      "version": "8.5.2",
+      "version": "8.5.3",
       "platform": "Windows",
       "platform_key": "windows",
       "source_url": "https://updates-windows.weights.com/latest.yml",
