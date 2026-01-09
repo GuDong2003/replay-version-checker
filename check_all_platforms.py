@@ -8,7 +8,7 @@ import re
 import json
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import requests
 import yaml
 
@@ -17,6 +17,9 @@ VERSION_FILE = "all_platforms_versions.json"
 
 # 更新源配置 (基于 app.asar 分析)
 UPDATES_BASE_URL = "https://updates-{subdomain}.weights.com"
+
+# 北京时间时区 (UTC+8)
+BEIJING_TZ = timezone(timedelta(hours=8))
 
 # 平台配置
 PLATFORMS = {
@@ -161,7 +164,8 @@ def main():
     print("=" * 70)
     print("🔍 Replay 全平台版本检查工具")
     print("=" * 70)
-    print(f"⏰ 检查时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    beijing_time = datetime.now(BEIJING_TZ)
+    print(f"⏰ 检查时间: {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)")
     print(f"🌐 官网地址: {REPLAY_URL}")
     print()
 
@@ -174,7 +178,7 @@ def main():
     print()
 
     current_versions = {
-        'check_time': datetime.now().isoformat(),
+        'check_time': datetime.now(BEIJING_TZ).isoformat(),
         'platforms': {}
     }
 
