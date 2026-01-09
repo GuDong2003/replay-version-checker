@@ -176,23 +176,21 @@ jobs:
               download_links="[官网下载](https://www.weights.com/replay?platform=${download_param})"
             fi
 
-            # 输出平台卡片元素
-            cat << ELEMENT_EOF
-          {
-            "tag": "div",
-            "text": {
-              "tag": "lark_md",
-              "content": "**${platform}**\n🔄 ${old_version} → ${new_version}\n📥 ${download_links}"
-            }
-          },
-          {
-            "tag": "hr"
-          },
-ELEMENT_EOF
+            # 输出平台卡片元素 (使用 printf 代替 heredoc)
+            printf '          {\n'
+            printf '            "tag": "div",\n'
+            printf '            "text": {\n'
+            printf '              "tag": "lark_md",\n'
+            printf '              "content": "**%s**\\n🔄 %s → %s\\n📥 %s"\n' "$platform" "$old_version" "$new_version" "$download_links"
+            printf '            }\n'
+            printf '          },\n'
+            printf '          {\n'
+            printf '            "tag": "hr"\n'
+            printf '          },\n'
           done | sed '$ d' | sed '$ d')  # 删除最后一个 hr 和逗号
 
           # 构建完整消息
-          cat > /tmp/feishu_message.json << MESSAGE_EOF
+          cat > /tmp/feishu_message.json <<'MESSAGE_EOF'
           {
             "msg_type": "interactive",
             "card": {
@@ -214,13 +212,13 @@ ELEMENT_EOF
                 {
                   "tag": "hr"
                 },
-                ${PLATFORM_ELEMENTS}
+                PLATFORM_ELEMENTS_PLACEHOLDER
                 {
                   "tag": "note",
                   "elements": [
                     {
                       "tag": "plain_text",
-                      "content": "检测时间: ${TIMESTAMP}"
+                      "content": "TIMESTAMP_PLACEHOLDER"
                     }
                   ]
                 },
@@ -234,7 +232,7 @@ ELEMENT_EOF
                         "content": "查看详情"
                       },
                       "type": "primary",
-                      "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                      "url": "GITHUB_URL_PLACEHOLDER"
                     }
                   ]
                 }
@@ -242,6 +240,12 @@ ELEMENT_EOF
             }
           }
 MESSAGE_EOF
+
+          # 替换占位符
+          sed -i.bak "s|PLATFORM_ELEMENTS_PLACEHOLDER|${PLATFORM_ELEMENTS}|g" /tmp/feishu_message.json
+          sed -i.bak "s|TIMESTAMP_PLACEHOLDER|${TIMESTAMP}|g" /tmp/feishu_message.json
+          sed -i.bak "s|GITHUB_URL_PLACEHOLDER|https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|g" /tmp/feishu_message.json
+          rm -f /tmp/feishu_message.json.bak
 
           # 发送到飞书
           HTTP_CODE=$(curl -s -o /tmp/feishu_response.txt -w "%{http_code}" \
