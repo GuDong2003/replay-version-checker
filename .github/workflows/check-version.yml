@@ -60,17 +60,26 @@ jobs:
               echo "No changes to commit"
             else
               # 先拉取最新代码避免冲突
-              git pull --rebase origin main || true
+              echo "Pulling latest changes..."
+              git fetch origin main
+
+              # 如果有冲突,放弃本次提交(因为可能其他工作流已经更新了)
+              if ! git rebase origin/main; then
+                echo "Rebase conflict detected, another workflow likely updated the file. Aborting this commit."
+                git rebase --abort
+                exit 0
+              fi
 
               # 提交变化
-              git commit -m "chore: update Replay version info [skip ci]"
+              git commit -m "chore: update Replay version info [skip ci]" || true
 
-              # 推送到远程
-              git push || {
-                echo "Push failed, trying to pull and push again..."
-                git pull --rebase origin main
-                git push
-              }
+              # 推送到远程,如果失败就放弃(避免邮件通知)
+              if ! git push origin main; then
+                echo "Push failed (likely another workflow pushed first). This is expected, skipping."
+                exit 0
+              fi
+
+              echo "Successfully pushed version update"
             fi
           fi
 
