@@ -74,10 +74,36 @@ DEV_MODE=true python3 check_all_platforms.py
 
 项目已配置自动化工作流:
 
-- **定时检查**: 每天 UTC 10:00 (北京时间 18:00)
+- **定时检查**: 每 4 小时运行一次
 - **手动触发**: Actions 页面点击 "Run workflow"
-- **版本通知**: 发现新版本自动创建 Issue
+- **版本通知**: 发现新版本自动创建 Issue + 飞书通知
 - **自动提交**: 版本文件更新后自动提交到仓库
+
+### 配置通知
+
+#### 1. GitHub Issue 通知
+
+默认开启，无需配置。发现新版本会自动创建 Issue，标签为 `version-update`。
+
+#### 2. 飞书机器人通知
+
+在仓库的 Settings → Secrets and variables → Actions 中添加：
+
+- **Secret 名称**: `FEISHU_WEBHOOK_URL`
+- **Secret 值**: 你的飞书机器人 Webhook URL
+
+**获取飞书 Webhook URL 步骤**:
+1. 在飞书群中，点击右上角设置 → 机器人
+2. 添加机器人 → 自定义机器人
+3. 设置机器人名称和描述
+4. 复制 Webhook 地址
+5. 粘贴到 GitHub Secrets
+
+配置完成后，版本更新时会收到精美的卡片通知，包含：
+- 📱 各平台版本变化对比
+- 📥 官网下载和直接下载链接
+- ⏰ 检测时间（北京时间）
+- 🔗 查看详情按钮（跳转到 GitHub Actions 运行日志）
 
 ## 📁 项目结构
 
@@ -222,6 +248,21 @@ schedule:
 - 自动标准化版本号并补齐长度
 - 支持检测版本升级、降级和不变三种状态
 
+### 飞书通知问题
+
+如果飞书通知发送失败:
+
+1. **检查 Webhook URL**: 确保 `FEISHU_WEBHOOK_URL` 配置正确
+2. **机器人权限**: 确认机器人已添加到目标群组
+3. **查看日志**: 在 GitHub Actions 运行日志中查看详细错误信息
+4. **测试 Webhook**: 可以使用 curl 命令测试 Webhook 是否可用
+
+```bash
+curl -X POST "YOUR_WEBHOOK_URL" \
+  -H "Content-Type: application/json" \
+  -d '{"msg_type":"text","content":{"text":"测试消息"}}'
+```
+
 ## 自定义扩展
 
 ### 修改重试配置
@@ -234,14 +275,35 @@ RETRY_DELAY = 2      # 重试间隔（秒）
 DEV_MODE = os.getenv('DEV_MODE', 'false').lower() == 'true'  # 开发模式
 ```
 
-### 添加通知方式
+### 添加其他通知方式
 
-在 `.github/workflows/check-version.yml` 的最后一步，你可以添加:
+项目已内置飞书通知。如需添加其他通知渠道，可在 [.github/workflows/check-version.yml](.github/workflows/check-version.yml) 的 `Send Feishu notification` 步骤后添加新的通知步骤。
 
-- 邮件通知
-- Slack/Discord 消息
-- 微信/钉钉机器人
-- Telegram Bot
+**支持的通知方式**:
+- ✅ **GitHub Issue** - 已内置
+- ✅ **飞书机器人** - 已内置，需配置 `FEISHU_WEBHOOK_URL`
+- 📧 **邮件通知** - 可使用 [action-send-mail](https://github.com/dawidd6/action-send-mail)
+- 💬 **Slack** - 可使用 [slack-github-action](https://github.com/slackapi/slack-github-action)
+- 🤖 **Discord** - 可使用 [discord-webhook-notify](https://github.com/marketplace/actions/discord-webhook-notify)
+- 📱 **微信/钉钉** - 类似飞书，使用 Webhook
+- 📨 **Telegram** - 可使用 [telegram-action](https://github.com/appleboy/telegram-action)
+
+**示例：添加 Telegram 通知**
+
+在 workflow 中添加新的步骤：
+
+```yaml
+- name: Send Telegram notification
+  if: steps.version_check.outputs.has_updates == 'true'
+  uses: appleboy/telegram-action@master
+  with:
+    to: ${{ secrets.TELEGRAM_CHAT_ID }}
+    token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+    message: |
+      🎉 Replay 新版本发布！
+
+      ${{ steps.version_check.outputs.updated_platforms }}
+```
 
 ### 自定义版本比较逻辑
 
