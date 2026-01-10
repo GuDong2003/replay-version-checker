@@ -87,22 +87,38 @@ DEV_MODE=true python3 check_all_platforms.py
 
 #### 2. 飞书机器人通知
 
-在仓库的 Settings → Secrets and variables → Actions 中添加：
+**步骤一：创建飞书群机器人**
 
-- **Secret 名称**: `FEISHU_WEBHOOK_URL`
-- **Secret 值**: 你的飞书机器人 Webhook URL
+1. 打开飞书群聊，点击右上角 `···` → `设置`
+2. 选择 `群机器人` → `添加机器人`
+3. 选择 `自定义机器人`
+4. 配置机器人信息：
+   - 名称：`Replay 版本通知` (可自定义)
+   - 描述：`自动通知 Replay 应用版本更新` (可自定义)
+5. 点击 `添加`，复制生成的 **Webhook 地址**
+   - 格式类似：`https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxxxx`
 
-**获取飞书 Webhook URL 步骤**:
-1. 在飞书群中，点击右上角设置 → 机器人
-2. 添加机器人 → 自定义机器人
-3. 设置机器人名称和描述
-4. 复制 Webhook 地址
-5. 粘贴到 GitHub Secrets
+**步骤二：配置 GitHub Secrets**
 
-配置完成后，版本更新时会收到精美的卡片通知，包含：
-- 📱 各平台版本变化对比
+1. 打开你的 GitHub 仓库
+2. 点击 `Settings` → `Secrets and variables` → `Actions`
+3. 点击 `New repository secret`
+4. 填写 Secret 信息：
+   - **Name**: `FEISHU_WEBHOOK_URL`
+   - **Secret**: 粘贴刚才复制的 Webhook 地址
+5. 点击 `Add secret` 保存
+
+**步骤三：测试通知**
+
+配置完成后，你可以：
+1. 手动触发 GitHub Actions 工作流测试
+2. 或等待定时任务自动运行
+3. 如果检测到版本更新，飞书群会收到通知
+
+**通知内容包含**:
+- 📱 各平台版本变化对比 (如：8.5.3 → 8.6.0)
 - 📥 官网下载和直接下载链接
-- ⏰ 检测时间（北京时间）
+- ⏰ 检测时间（北京时间 UTC+8）
 - 🔗 查看详情按钮（跳转到 GitHub Actions 运行日志）
 
 ## 📁 项目结构
