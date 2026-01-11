@@ -40,14 +40,13 @@ PLATFORMS = {
         'subdomain': 'windows',
         'yml_file': 'latest.yml',
         'download_param': 'windows'
+    },
+    'linux': {
+        'name': 'Linux',
+        'subdomain': 'linux',
+        'yml_file': 'latest-linux.yml',
+        'download_param': 'linux'
     }
-    # Linux 使用 Cloudflare R2 签名 URL，无法通过简单的 YAML 文件获取
-    # 'linux': {
-    #     'name': 'Linux',
-    #     'subdomain': 'linux',
-    #     'yml_file': 'latest.yml',
-    #     'download_param': 'linux'
-    # }
 }
 
 # 配置选项

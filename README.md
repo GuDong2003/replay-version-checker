@@ -5,7 +5,7 @@
 ## ✨ 功能特性
 
 - ✅ 直接访问官方更新服务器（与 Replay 应用完全相同的 API）
-- ✅ 同时检查多个平台（macOS ARM/Intel、Windows）
+- ✅ 同时检查多个平台（macOS ARM/Intel、Windows、Linux）
 - ✅ 智能版本比较算法（支持各种版本号格式）
 - ✅ 版本变化时自动创建 GitHub Issue 通知
 - ✅ 支持 GitHub Actions 定时运行
@@ -46,7 +46,7 @@ python3 check_all_platforms.py
 - ✅ macOS Apple Silicon (ARM64) - `https://updates-mac-arm64.weights.com`
 - ✅ macOS Intel (x64) - `https://updates-mac-x64.weights.com`
 - ✅ Windows - `https://updates-windows.weights.com`
-- ⚠️ Linux - 由于使用 Cloudflare R2 签名 URL，需要 AWS 签名认证，目前无法自动检查
+- ✅ Linux - `https://updates-linux.weights.com`
 
 ## 📖 使用说明
 
@@ -125,7 +125,7 @@ DEV_MODE=true python3 check_all_platforms.py
 
 ```
 ├── check_all_platforms.py       # ⭐ 主检查脚本（约 316 行）
-│   ├── PLATFORMS               # 平台配置（macOS ARM/Intel, Windows）
+│   ├── PLATFORMS               # 平台配置（macOS ARM/Intel, Windows, Linux）
 │   ├── fetch_platform_version()  # 获取单个平台版本
 │   ├── compare_versions()      # 智能版本比较算法
 │   ├── is_network_error()      # 网络错误识别
@@ -218,10 +218,6 @@ schedule:
   }
 }
 ```
-
-> **注意**:
-> - Linux 平台使用 Cloudflare R2 签名 URL，需要 AWS 签名认证，目前无法通过简单的 YAML 文件自动检查
-> - 如果某个平台检查失败，它将不会出现在输出文件中
 
 ## 技术栈
 
