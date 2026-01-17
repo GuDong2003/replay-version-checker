@@ -180,7 +180,7 @@ schedule:
 
 ```json
 {
-  "check_time": "2026-01-10T00:42:40.824690",
+  "check_time": "2026-01-17T20:21:21.665783+08:00",
   "platforms": {
     "mac-arm64": {
       "version": "8.6.0",
@@ -214,6 +214,17 @@ schedule:
       "download_path": "Replay-8.6.0-installer.exe",
       "full_download_url": "https://updates-windows.weights.com/Replay-8.6.0-installer.exe",
       "sha512": "2r1A4ZcIQNLUJFcm..."
+    },
+    "linux": {
+      "version": "8.6.0",
+      "platform": "Linux",
+      "platform_key": "linux",
+      "source_url": "https://updates-linux.weights.com/latest-linux.yml",
+      "download_param": "linux",
+      "release_date": "2026-01-05T11:33:13.768Z",
+      "download_path": "Replay-8.6.0.deb",
+      "full_download_url": "https://updates-linux.weights.com/Replay-8.6.0.deb",
+      "sha512": "myktcNW4R8AiYr2d..."
     }
   }
 }
