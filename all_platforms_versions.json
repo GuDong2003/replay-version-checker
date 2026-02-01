@@ -1,5 +1,5 @@
 {
-  "check_time": "2026-02-01T04:14:20.807792+08:00",
+  "check_time": "2026-02-01T09:19:51.873433+08:00",
   "platforms": {
     "mac-arm64": {
       "version": "8.6.0",
@@ -13,15 +13,15 @@
       "sha512": "pKL8oEy1GXBHaIOF..."
     },
     "mac-x64": {
-      "version": "8.6.0",
+      "version": "8.7.0",
       "platform": "macOS Intel",
       "platform_key": "mac-x64",
       "source_url": "https://updates-mac-x64.weights.com/latest-mac.yml",
       "download_param": "mac_x64",
-      "release_date": "2026-01-05T11:38:32.176Z",
-      "download_path": "Replay-x64-8.6.0.zip",
-      "full_download_url": "https://updates-mac-x64.weights.com/Replay-x64-8.6.0.zip",
-      "sha512": "1KmUUacQdmTzVace..."
+      "release_date": "2026-01-24T05:15:05.047Z",
+      "download_path": "Replay-x64-8.7.0.zip",
+      "full_download_url": "https://updates-mac-x64.weights.com/Replay-x64-8.7.0.zip",
+      "sha512": "KJIdeLuLg7UcmrFO..."
     },
     "windows": {
       "version": "8.7.0",
