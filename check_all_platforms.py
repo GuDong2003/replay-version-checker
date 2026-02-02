@@ -219,6 +219,12 @@ def main():
     updated_platforms = []
     new_platforms = []
 
+    # 构建最终要保存的版本数据（基于历史数据，只更新有新版本的平台）
+    final_versions = {
+        'check_time': previous_data.get('check_time', current_versions['check_time']) if previous_data else current_versions['check_time'],
+        'platforms': dict(previous_data.get('platforms', {})) if previous_data else {}
+    }
+
     if previous_data and 'platforms' in previous_data:
         print("🔄 版本变化检测:")
         print()
@@ -232,6 +238,8 @@ def main():
                 comparison = compare_versions(current_version, previous_version)
 
                 if comparison > 0:
+                    # 只有版本升级时才更新该平台的信息
+                    final_versions['platforms'][platform_key] = current_info
                     updated_platforms.append({
                         'platform': platform_name,
                         'platform_key': platform_key,
@@ -242,10 +250,13 @@ def main():
                     })
                     print(f"🆕 {platform_name}: {previous_version} → {current_version}")
                 elif comparison < 0:
-                    print(f"⚠️  {platform_name}: 版本回退 {previous_version} → {current_version}")
+                    # 版本回退，保留旧版本信息，不更新
+                    print(f"⚠️  {platform_name}: 上游返回旧版本 {current_version}，保留现有版本 {previous_version}")
                 else:
                     print(f"✅ {platform_name}: {current_version} (无变化)")
             else:
+                # 新增平台
+                final_versions['platforms'][platform_key] = current_info
                 new_platforms.append(platform_name)
                 print(f"🆕 {platform_name}: {current_version} (新增平台)")
 
@@ -253,6 +264,9 @@ def main():
 
         # 显示更新摘要
         if updated_platforms or new_platforms:
+            # 只有在有真正更新时才更新 check_time
+            final_versions['check_time'] = current_versions['check_time']
+
             print("=" * 70)
             print("🎉 发现更新!")
             print("=" * 70)
@@ -298,6 +312,8 @@ def main():
                     f.write(f"has_updates=false\n")
                     f.write(f"updated_count=0\n")
     else:
+        # 首次运行，使用当前获取的所有版本信息
+        final_versions = current_versions
         print("📝 首次检查,记录所有平台的当前版本")
         print()
 
@@ -306,8 +322,8 @@ def main():
                 f.write(f"has_updates=false\n")
                 f.write(f"is_first_run=true\n")
 
-    # 保存当前版本
-    save_current_versions(current_versions)
+    # 保存最终版本数据（只包含真正更新的内容）
+    save_current_versions(final_versions)
 
     print("=" * 70)
     print("✅ 全平台检查完成")
